@@ -1,0 +1,18 @@
+[
+    [
+        "nat-079a86c609d1417c3",
+        "pending"
+    ],
+    [
+        "nat-0d024260bee91ae37",
+        "available"
+    ]
+]
+[]
+[
+    "18.143.227.86",
+    "47.130.167.141"
+]
+[
+    "534883914134.dkr.ecr.ap-southeast-1.amazonaws.com/devops-bootcamp/abdhakim"
+]
