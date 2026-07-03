@@ -1,0 +1,25 @@
+============================================
+Cloudflare nameserver
+============================================
+
+1. nameserver = mitch.ns.cloudflare.com
+2. nameserver = rosemary.ns.cloudflare.com
+
+============================================
+
+
+========================================================
+URL pages.dev portfolio awam dari GitHub + custom domain
+========================================================
+
+1. https://aceacid94-github-io.pages.dev
+2. https://www.abdulhakim-devops.com
+
+==================================
+URL private-site custom subdomain
+==================================
+
+1. private.abdulhakim-devops.com
+
+===================================
+
