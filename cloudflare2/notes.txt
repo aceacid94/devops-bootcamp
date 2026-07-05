@@ -1,0 +1,111 @@
+===============
+Nota Cloudflare
+===============
+
+==================================================================================
+JENIS-JENIS REKOD DNS:
+
+1. A     - IPv4  | 203.0.113.15
+2. AAAA  - IPv6  | 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+3. CNAME - alias | www.infratify.com CNAME infratify.com
+4. TXT   - teks bebas untuk pengesahan domain | google-site-verification=xxx
+5. MX    - rekod khas untuk urusan email | smtp.ap-northeast-1.amazonses 
+==================================================================================
+
+=================================================================================================================================
+CARA-CARA DEPLOY DOMAIN YANG DAH DIBELI KE FLOUDFLARE [PEMBELIAN DI BUAT DI LUAR CLOUDFLARE]
+
+1. LOGIN MASUK CLOUDFLARE > PILIH "DOMAIN" > ADD DOMAIN > CONNECT A DOMAIN > LETAK DOMAIN YANG DAH DIBELI > PLAN: FREE > CONTINUE
+2. REVIEW DNS RECORDS > CONTINUE
+3. [COPY 2 NAMESERVER DI CLOUDFLARE] > DNS > SETTINGS 
+4. [REPLACE NAMESERVER DI REGISTRAR] > NAME SERVER > CHANGE > SAVE  
+=================================================================================================================================
+
+===================================================================================================================================
+CARA PUBLISH GITHUB REPO DI CLOUDFLARE
+
+1. LOGIN MASUK KE CLOUDFLARE > ACCOUNT HOME > COMPUTE > WORKERS & PAGES > CREATE APPLICATION > LOOKING TO DEPLOY PAGES? GET STARTED
+2. [PILIH REPO GITHUB.IO] > IMPORT EXISTING GIT REPO > CONNECT GITHUB & AUTORIZE > SELECT A REPOSITORY: username.github.io
+3. [BUILD SETTING] > PRESET: NONE > BUILD: "LEAVE EMPTY" > OUTPUT: /
+4. [PUBLISH] > SAVE AND DEPLOY > PROJECT.PAGES.DEV
+===================================================================================================================================
+
+
+===================================================================================================================================
+CARA SEDIAKAN SERVER NGINX DI EC2 DAN SETUP DOMAIN KE ELASTIC IP
+====================================================================================================================================
+
+1.[CIPTA SECURITY GROUP UNTUK WEB SERVER ]
+  - EC2 > SECURITY GROUP > CREATE SECURITY GROUP
+  - NAME: "ANY" > DESCRIPTION: ALLOW HTTP/HTTPS TO NGINX > VPC: "ANY VPC CREATED PREVIOUSLY"
+  - SET INBOUND RULES > HTTP > 80 > 0.0.0.0/0 | HTTPS > 443 > 0.0.0.0/0
+  - OUTBOUND RULES > LEAVE DEFAULT (ALL TRAFFIC)
+
+2.[LANCAR EC2 ORIGIN + PASANG ELASTIC IP]
+  - [LANCAR EC2]- EC2 > LAUNCH INSTANCE > UBUNTU 24.04 > T3 MICRO
+  - [NETWORK + SECURITY GROUP] - VPC: DEVOPS-VPC | PUBLIC SUBNET > SECURITY GROUP: DEVOPS-SG > PROCEED WITHOUT A KEY PAIR
+  - [IAM PROFILE] - ADVANCE DETAILS > IAM INSTANCE PROFILE: EC2-SSM-ROLE
+  - [PASANG ELASTIC IP] - ELASTIC IP > ACTIONS > ASSOCIATE > INSTANCE > PILIH EC2 > ASSOCIATE
+==================================================================================================================================== 
+ 
+====================================================================================================================================
+CARA PASANG WEB SERVER NGINX ID EC2
+====================================================================================================================================
+
+# EC2 > CONNECT > SESSION MANAGER (DI BROWSER)
+
+1. cd ~
+2. sudo apt update
+3. sudo apt install -y nginx dnsutils
+4. systemctl status nginx
+5. buka http://<elastic ip> > "Welcome to nginx!"
+====================================================================================================================================
+
+====================================================================================================================================
+SETUP WEB.DOMAIN KE ELASTIC IP SERVER
+====================================================================================================================================
+
+1. [ADD RECORD] - DNS > RECORDS > ADD RECORDS
+2. [ISI A RECORD] - TYPE: A > NAMA: WEB > IPV4 ADDRESS: <ELASTIC IP>
+3. [PROXY STATUS: GREY] - PROXY STATUS: DNS ONLY > SAVE
+4. [BUKA WEB.DOMAIN] - HTTP://WEB.DOMAIN > HALAMAN NGINX MUNCUL
+=====================================================================================================================================
+
+=====================================================================================================================================
+CARA DEDAHKAN SERVIS PRIVATE KE INTERNET GUNA CLOUDFLARE TUNNEL
+=====================================================================================================================================
+
+1. CIPTA CLOUDFLARE TUNNEL
+
+	- [BUKA ZERO TRUST] - CLOUDFLARE DASHBOARD > ZERO TRUST > KALI PERTAMA: NAMA TEAM + PLAN FREE
+	- [CARI MANAGE TUNNELS] - NETWORK > OVERVIEW > MANAGE TUNNELS > CREATE A TUNNEL > CLOUDFLARE
+	- [NAMA + OS] - NAMA: DEVOP-CLOUDFLARE2 > OS: DEBIAN | 64-BIT > SAVE
+	
+2. PASANG CONNECTOR
+	- RUN COMMAND DI TERMINAL:
+=====================================================================================================================================
+PUB=$(aws ec2 describe-subnets --filters "Name=tag:Name,Values=*public*" --query "Subnets[0].SubnetId" --output text)
+PRIV=$(aws ec2 describe-subnets --filters "Name=tag:Name,Values=*private*" --query "Subnets[0].SubnetId" --output text)
+RTB=$(aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$PRIV" --query \
+"RouteTables[0].RouteTableId" --output text)
+SG=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=devops-sg" --query "SecurityGroups[0].GroupId" \
+--output text)
+EIP=$(aws ec2 allocate-address --domain vpc --query AllocationId --output text)
+NAT=$(aws ec2 create-nat-gateway --subnet-id $PUB --allocation-id $EIP --query NatGateway.NatGatewayId --output text)
+aws ec2 wait nat-gateway-available --nat-gateway-ids $NAT
+aws ec2 create-route --route-table-id $RTB --destination-cidr-block 0.0.0.0/0 --nat-gateway-id $NAT
+AMI="resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id"
+aws ec2 run-instances --image-id $AMI --instance-type t3.micro --subnet-id $PRIV --security-group-ids $SG \
+--iam-instance-profile Name=EC2-SSM-Role --no-associate-public-ip-address
+=======================================================================================================================================
+3. PERGI KE EC2 YANG DAH DICIPTA > SSM > PASANG NGINX & CLOUDFLARE > PERGI SEMULA KE CLOUDFLARE CONNECTOR > SALIN ARAHAN DAN TAMPAL DI SSM
+=======================================================================================================================================
+
+=======================================================================================================================================
+SETUP SUBDOMAIN.DOMAIN.COM KE SERVIS LOCALHOST
+=======================================================================================================================================
+1. [PUBLIC HOSTNAME] - TUNNEL > PUBLIC HOSTNAME > ADD A PUBLIC HOSTNAME
+2. [PILIH SUBDOMAIN] - SUBDOMAIN: SUBDOMAIN | DOMAIN: DOMAIN.COM
+3. [TUNJUK SERVIS TEMPATAN] - SERVICE: HTTP | URL: LOCALHOST:80 > SAVE
+4. [BUKA LAMAN WEB] - HTTPS://SUBDOMAIN.DOMAIN.COM > SERVIS MUNCUL DI CLOUDFLARE TUNNEL
+=======================================================================================================================================
