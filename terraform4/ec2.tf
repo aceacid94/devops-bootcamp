@@ -19,6 +19,7 @@ module "my_server" {
   create_security_group  = false
   vpc_security_group_ids = [module.my_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ssm_profile.name
+  create_spot_instance   = false
 
   user_data = templatefile("userdata.sh", {})
   tags      = { Name = "tf-rackula-server" }
