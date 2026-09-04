@@ -1,0 +1,8 @@
+.terraform/
+.terraform.lock.hcl
+inventory.ini
+*.tfstate
+*.tfstate.backup
+.idea/
+.vscode/
+**/__pycache__/
