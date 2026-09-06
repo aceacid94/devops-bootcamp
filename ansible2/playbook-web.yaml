@@ -1,6 +1,10 @@
 - name: Sediakan web server
   hosts: nodes
   become: true
+  vars:
+    site_title: Armada Infratify
+    site_owner: Pasukan Platform
+    web_port: 80
   gather_facts: true
   tasks:
     - name: Pasang nginx
@@ -14,6 +18,17 @@
         state: started
         enabled: yes
     - name: Tulis index.html
-      copy:
-        content: "Ini {{ inventory_hostname }}\n"
+      template:
+        src: index.html.j2
         dest: /var/www/html/index.html
+    - name: Tulis config nginx
+      template:
+        src: nginx-site.conf.j2
+        dest: /etc/nginx/sites-available/default
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
