@@ -1,0 +1,5 @@
+- name: Pasang Prometheus
+  hosts: node1
+  become: true
+  roles:
+    - prometheus.prometheus.prometheus
